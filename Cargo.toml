@@ -1,5 +1,5 @@
 [package]
-name = "ThatOneBot-rust"
+name = "that-one-bot-rust"
 version = "0.1.0"
 authors = ["Tyler"]
 edition = "2018"
