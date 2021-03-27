@@ -40,7 +40,7 @@ async fn boxes(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let image_path =
         Path::new(env::var("BOT_STORAGE_LOCATION").expect("BOT_STORAGE_LOCATION not in environment.").as_str())
         .join("images")
-        .join("box.png");
+        .join("box.jpg");
 
     let num = if args.is_empty() {
         4
