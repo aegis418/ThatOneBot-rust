@@ -89,7 +89,7 @@ impl TagsDbConnection {
 #[sub_commands(tag_add, tag_remove, tag_update, tag_raw)]
 #[num_args(1)]
 async fn tag(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    msg.reply(&ctx.http, "In tag.").await?;
+    // msg.reply(&ctx.http, "In tag.").await?;
     let tag: String = args.single().unwrap();
     let mut conn = TagsDbConnection::new();
     let result = conn.find_tag(tag);
@@ -122,7 +122,7 @@ async fn tag(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 #[command("add")]
 #[num_args(2)]
 async fn tag_add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    msg.reply(&ctx.http, "In tag.add").await?;
+    // msg.reply(&ctx.http, "In tag.add").await?;
     let name: String = args.single().unwrap();
     let content: String = args.single().unwrap();
 
@@ -140,7 +140,7 @@ async fn tag_add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 #[aliases("delete", "del", "rm")]
 #[num_args(1)]
 async fn tag_remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    msg.reply(&ctx.http, "In tag.remove").await?;
+    // msg.reply(&ctx.http, "In tag.remove").await?;
     let tag: String = args.single().unwrap();
 
     let mut conn = TagsDbConnection::new();
@@ -157,7 +157,7 @@ async fn tag_remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
 #[command("update")]
 #[num_args(2)]
 async fn tag_update(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    msg.reply(&ctx.http, "In tag.update").await?;
+    // msg.reply(&ctx.http, "In tag.update").await?;
     let tag: String = args.single().unwrap();
     let content: String = args.single().unwrap();
 
@@ -175,7 +175,7 @@ async fn tag_update(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
 #[num_args(1)]
 #[owners_only]
 async fn tag_raw(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    msg.reply(&ctx.http, "In tag.raw").await?;
+    // msg.reply(&ctx.http, "In tag.raw").await?;
     let name: String = args.single().unwrap();
 
     let mut conn = TagsDbConnection::new();
