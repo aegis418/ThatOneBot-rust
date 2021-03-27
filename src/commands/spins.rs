@@ -182,7 +182,7 @@ async fn auto_spin(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
                     })
                 }).await?;
 
-                sleep(Duration::from_secs(2)).await;
+                sleep(Duration::from_secs(3)).await;
             }
         }
     };
