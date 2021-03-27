@@ -163,7 +163,7 @@ async fn auto_spin(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
             msg.reply(&ctx.http, "Use a number greater than zero.").await?;
         },
         _ => {
-            for i in (1..num+1).rev() {
+            for i in (0..num+1).rev() {
                 let tag = dan_api::get_tags(Some(get_rand_char())).await?.get_random_tag();
                 let tag_url = format!("https://danbooru.donmai.us/posts?tags={}", tag);
                 let tag_vec = vec![tag.clone()];
@@ -182,7 +182,7 @@ async fn auto_spin(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
                     })
                 }).await?;
 
-                sleep(Duration::from_secs(1)).await;
+                sleep(Duration::from_secs(2)).await;
             }
         }
     };
