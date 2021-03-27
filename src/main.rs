@@ -48,6 +48,10 @@ struct General;
 #[commands(dan, yan, kona, safe, auto_spin)]
 struct Spins;
 
+#[group]
+#[commands(tag)]
+struct Tags;
+
 #[tokio::main]
 async fn main() {
     dotenv::dotenv().expect("Failed to load from .env file.");
@@ -72,7 +76,8 @@ async fn main() {
             .owners(owner)
             .prefix(";"))
         .group(&GENERAL_GROUP)
-        .group(&SPINS_GROUP);
+        .group(&SPINS_GROUP)
+        .group(&TAGS_GROUP);
 
     // Build the bot client
     let mut client = Client::builder(&token)
