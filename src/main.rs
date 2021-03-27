@@ -1,29 +1,29 @@
-mod apis;
-mod util;
-mod commands;
-
+use std::collections::HashSet;
 use std::env;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+
+use rusqlite::Connection;
 use serenity::{
     async_trait,
-    model::{channel::Message, gateway::Ready},
-    prelude::*,
-    http::Http,
     framework::standard::{
         macros::*,
-    }
+    },
+    http::Http,
+    model::{gateway::Ready},
+    prelude::*
 };
 use serenity::framework::StandardFramework;
-use std::collections::HashSet;
 
 use commands::{
     spins::*,
     tags::*,
     utility::*,
 };
-use std::sync::Arc;
-use rusqlite::Connection;
-use std::path::{Path, PathBuf};
 
+mod apis;
+mod util;
+mod commands;
 
 struct Handler;
 
@@ -43,6 +43,10 @@ impl EventHandler for Handler {
 #[group]
 #[commands(get_avatar, boxes)]
 struct General;
+
+#[group]
+#[commands(dan, yan, kona, safe, auto_spin)]
+struct Spins;
 
 #[tokio::main]
 async fn main() {
@@ -67,7 +71,8 @@ async fn main() {
         .configure(|c| c
             .owners(owner)
             .prefix(";"))
-        .group(&GENERAL_GROUP);
+        .group(&GENERAL_GROUP)
+        .group(&SPINS_GROUP);
 
     // Build the bot client
     let mut client = Client::builder(&token)
