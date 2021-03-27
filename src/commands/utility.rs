@@ -1,12 +1,10 @@
-use serenity::prelude::*;
-use serenity::model::prelude::*;
-use serenity::framework::standard::{CommandResult, macros::command, Args};
-use serenity::utils::MessageBuilder;
-use std::path::Path;
 use std::env;
-use tokio::fs::File;
-use tokio::time::{sleep, Duration};
+use std::path::Path;
 
+use serenity::framework::standard::{Args, CommandResult, macros::command};
+use serenity::model::prelude::*;
+use serenity::prelude::*;
+use tokio::time::{Duration, sleep};
 
 #[command]
 #[aliases("ga")]
@@ -29,7 +27,7 @@ async fn get_avatar(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
 
             m
         }).await?,
-        Err(err) => msg.reply(&ctx.http, "No user with given id").await?
+        Err(_err) => msg.reply(&ctx.http, "No user with given id").await?
     };
 
     Ok(())
