@@ -14,7 +14,8 @@ rand = "*"
 roxmltree = "0.14"
 tokio = {version = "1", features = ["full"]}
 rusqlite = {version = "0.24", features = ["bundled"]}
-
+songbird = "0.1"
+regex = "1"
 
 [dependencies.serenity]
 default-features = false

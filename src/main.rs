@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 use std::env;
-use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use rusqlite::Connection;
+use songbird::SerenityInit;
+
 use serenity::{
     async_trait,
     framework::standard::{
@@ -19,6 +19,7 @@ use commands::{
     spins::*,
     tags::*,
     utility::*,
+    voice::*,
 };
 
 mod apis;
@@ -34,12 +35,6 @@ impl EventHandler for Handler {
     }
 }
 
-// struct TagDB;
-//
-// impl TypeMapKey for TagDB {
-//     type Value = Arc<RwLock>;
-// }
-
 #[group]
 #[commands(get_avatar, boxes)]
 struct General;
@@ -51,6 +46,10 @@ struct Spins;
 #[group]
 #[commands(tag)]
 struct Tags;
+
+#[group]
+#[commands(join, leave, play, stop)]
+struct Voice;
 
 #[tokio::main]
 async fn main() {
@@ -77,22 +76,23 @@ async fn main() {
             .prefix(";"))
         .group(&GENERAL_GROUP)
         .group(&SPINS_GROUP)
-        .group(&TAGS_GROUP);
+        .group(&TAGS_GROUP)
+        .group(&VOICE_GROUP);
 
     // Build the bot client
     let mut client = Client::builder(&token)
         .framework(framework)
         .event_handler(Handler)
+        .register_songbird()
         .await
         .expect("Error creating client.");
 
-    // {
-    //     let mut db = client.data.write().await;
-    //     let db_loc = env::var("BOT_STORAGE_LOCATION")
-    //         .expect("Please specify in .env file where you want to store bot related files.");
-    //     let db_path = Path::new(&db_loc).join("tags.db");
-    //     db.insert::<TagDB>(Arc::new(RwLock::new(Connection::open(db_path).expect("Cannot open/create db file in the location."))))
-    // }
+    // Register NowPlaying into client global data.
+    {
+        let mut data = client.data.write().await;
+
+        data.insert::<NowPlaying>(Arc::new(RwLock::new(NowPlaying::None)))
+    }
 
     // Start the client.
     if let Err(why) = client.start().await {
