@@ -1,15 +1,13 @@
-use reqwest::{Client, Request, Result};
-use std::fmt::Error;
-use serenity::futures::future::ok;
+use reqwest::{Client, Result};
 
 extern crate json;
 
 pub struct OCRemix {
-    station_id: StationID,
-    url: Option<String>,
-    title: String,
-    album: String,
-    album_url: String
+    pub station_id: StationID,
+    pub url: Option<String>,
+    pub title: String,
+    pub album: String,
+    pub album_url: String
 }
 
 impl OCRemix {
@@ -24,6 +22,7 @@ impl OCRemix {
     }
 }
 
+#[derive(Copy, Clone)]
 pub enum StationID {
     Game,
     OCR,
@@ -67,12 +66,24 @@ impl Default for StationID {
 impl From<String> for StationID {
     fn from(id_string: String) -> Self {
         match &*id_string {
-            "game" =>  StationID::Game,
-            "ocr" => StationID::OCR,
-            "covers" => StationID::Covers,
-            "chiptunes" => StationID::Chiptunes,
+            "game" | "games" =>  StationID::Game,
+            "ocr"| "ocremix" => StationID::OCR,
+            "covers" | "cover" => StationID::Covers,
+            "chiptunes" | "chiptune" => StationID::Chiptunes,
             "all" => StationID::All,
             _ => StationID::default()
+        }
+    }
+}
+
+impl Into<String> for StationID {
+    fn into(self) -> String {
+        match self {
+            StationID::Game => {String::from("Game")}
+            StationID::OCR => {String::from("OCRemix")}
+            StationID::Covers => {String::from("Covers")}
+            StationID::Chiptunes => {String::from("Chiptunes")}
+            StationID::All => {String::from("All")}
         }
     }
 }
@@ -91,7 +102,7 @@ pub async fn get_current_song(sid: StationID) -> Result<OCRemix> {
     let json = json::parse(&resp).unwrap();
     let title = json["sched_current"]["songs"][0]["title"].to_string();
     let album = json["sched_current"]["songs"][0]["albums"][0]["name"].to_string();
-    let album_url = format!("{}{}_240.jpg", base, json["sched_current"]["songs"][0]["albums"][0]["art"].to_string());
+    let album_url = format!("{}{}_320.jpg", base, json["sched_current"]["songs"][0]["albums"][0]["art"].to_string());
     let url = if !json["sched_current"]["songs"][0]["url"].is_empty() {
         Some(json["sched_current"]["songs"][0]["url"].to_string())
     } else {

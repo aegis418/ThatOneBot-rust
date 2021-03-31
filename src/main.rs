@@ -48,7 +48,7 @@ struct Spins;
 struct Tags;
 
 #[group]
-#[commands(join, leave, play, stop)]
+#[commands(join, leave, play, stop, now_playing)]
 struct Voice;
 
 #[tokio::main]

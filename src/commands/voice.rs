@@ -7,7 +7,7 @@ use std::sync::Arc;
 use regex::Regex;
 
 use crate::apis::ocremix_api::*;
-use tokio::sync::RwLockReadGuard;
+use std::ops::Deref;
 
 // TODO: Expand on this using a hashmap to allow multiple guilds.
 pub enum NowPlaying {
@@ -220,6 +220,58 @@ async fn stop(ctx: &Context, msg: &Message) -> CommandResult {
     } else {
         msg.reply(&ctx.http, "Not in a voice channel").await?;
     }
+
+    Ok(())
+}
+
+#[command]
+#[only_in(guilds)]
+#[aliases("np")]
+async fn now_playing(ctx: &Context, msg: &Message) -> CommandResult {
+    let guild = msg.guild(&ctx.cache).await.unwrap();
+    let guild_id = guild.id;
+
+    let now_playing_lock = ctx.data.read().await;
+    let now_playing = now_playing_lock.get::<NowPlaying>().expect("Expected NowPlaying in data").clone();
+
+    {
+        let now_playing =  now_playing.read().await;
+
+        match now_playing.deref() {
+            NowPlaying::None => {
+                msg.channel_id.say(&ctx.http, "Nothing is playing").await?;
+            }
+            NowPlaying::Youtube { track } => {
+                let metadata = track.metadata();
+                msg.channel_id.send_message(&ctx.http, |m| {
+                    m.embed(|e| {
+                        e.title(metadata.title.as_ref().unwrap());
+                        e.url(metadata.source_url.as_ref().unwrap());
+                        e.color(16741516)
+                    })
+                }).await?;
+            }
+            NowPlaying::OCRemix { playing, .. } => {
+                let url = match playing.url.as_ref() {
+                    None => {String::from("")}
+                    Some(url) => {String::from(url)}
+                };
+
+                msg.channel_id.send_message(&ctx.http, |m| {
+                    m.embed(|e| {
+                        e.color(10276252);
+                        e.title(&playing.title);
+                        e.url(url);
+                        e.thumbnail(&playing.album_url);
+                        let station_name: &String = &playing.station_id.into();
+                        e.description(format!("Album: {} \nStation: {}", playing.album, station_name))
+                    })
+                }).await?;
+            }
+        }
+
+    }
+
 
     Ok(())
 }
