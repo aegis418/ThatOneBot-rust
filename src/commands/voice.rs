@@ -229,7 +229,7 @@ async fn stop(ctx: &Context, msg: &Message) -> CommandResult {
 #[aliases("np")]
 async fn now_playing(ctx: &Context, msg: &Message) -> CommandResult {
     let guild = msg.guild(&ctx.cache).await.unwrap();
-    let guild_id = guild.id;
+    let _guild_id = guild.id;
 
     let now_playing_lock = ctx.data.read().await;
     let now_playing = now_playing_lock.get::<NowPlaying>().expect("Expected NowPlaying in data").clone();

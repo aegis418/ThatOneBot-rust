@@ -86,7 +86,7 @@ impl TagsDbConnection {
 
 #[command]
 #[aliases("t")]
-#[sub_commands(tag_add, tag_remove, tag_update, tag_raw)]
+#[sub_commands(tag_add, tag_remove, tag_update, tag_raw, tag_help)]
 #[num_args(1)]
 async fn tag(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     // msg.reply(&ctx.http, "In tag.").await?;
@@ -187,6 +187,24 @@ async fn tag_raw(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
         None => msg.reply(&ctx.http, "Tag not found.").await?,
     };
     conn.close();
+
+    Ok(())
+}
+
+#[command("help")]
+async fn tag_help(ctx: &Context, msg: &Message) -> CommandResult {
+    if let Ok(user_dm_channel) = msg.author.create_dm_channel(&ctx.http).await {
+        let mut conn = TagsDbConnection::new();
+        let tag_names = conn.get_all_tag_names();
+
+
+        user_dm_channel.send_message(&ctx.http, |m| {
+            m.content(format!("The list of tags is: ```{}```", tag_names.join("\n")))
+        }).await?;
+
+    } else {
+        println!("Failed to create dm channel.");
+    }
 
     Ok(())
 }
