@@ -155,6 +155,7 @@ async fn tag_remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
 
 
 #[command("update")]
+#[aliases("edit")]
 #[num_args(2)]
 async fn tag_update(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     // msg.reply(&ctx.http, "In tag.update").await?;
