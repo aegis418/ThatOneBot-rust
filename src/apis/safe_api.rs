@@ -1,5 +1,6 @@
 use reqwest::{Client, Method};
 use roxmltree::{Document};
+use tracing::*;
 
 use crate::util::util;
 
@@ -72,6 +73,8 @@ pub async fn get_random_post(tags: Option<Vec<String>>) -> Option<String> {
         .attribute("file_url")
         .unwrap()
         .to_string();
+
+    debug!(test = "Safe Post Response", url = url.as_str());
 
     Some(url)
 }

@@ -6,6 +6,8 @@ use reqwest::{Client, Method, Result};
 
 use crate::apis::common::*;
 
+use tracing::{debug};
+
 
 fn get_dan_api_key() -> String {
     env::var("DAN_API_KEY").expect("To get images from danbooru you need an account (DAN_API_USERNAME) and api key (DAN_API_KEY) environment variables in .env file")
@@ -28,6 +30,8 @@ pub async fn get_posts(tags: Option<Vec<String>>) -> Result<Posts> {
             .text()
             .await?;
 
+        debug!(test = "Dan Post Response", response = resp.as_str());
+
         Ok(Posts{posts: json::parse(resp.as_str()).unwrap()})
     } else {
         let resp = client.request(Method::GET, "https://danbooru.donmai.us/posts.json")
@@ -38,10 +42,13 @@ pub async fn get_posts(tags: Option<Vec<String>>) -> Result<Posts> {
             .await?;
 
 
+        debug!(test = "Dan Post Response", response = resp.as_str());
+
         Ok(Posts{posts: json::parse(resp.as_str()).unwrap()})
     }
 
 }
+
 
 pub async fn get_tags(starts_with: Option<String>) -> Result<Tags> {
     let client = Client::new();
@@ -56,6 +63,8 @@ pub async fn get_tags(starts_with: Option<String>) -> Result<Tags> {
             .text()
             .await?;
 
+        debug!(test = "Tag Response", response = resp.as_str());
+
         Ok(Tags{tags: json::parse(resp.as_str()).unwrap()})
     } else {
         let resp = client.request(Method::GET, "https://danbooru.donmai.us/tags.json")
@@ -64,6 +73,8 @@ pub async fn get_tags(starts_with: Option<String>) -> Result<Tags> {
             .await?
             .text()
             .await?;
+
+        debug!(test = "Tag Response", response = resp.as_str());
 
         Ok(Tags{tags: json::parse(resp.as_str()).unwrap()})
     }

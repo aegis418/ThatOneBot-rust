@@ -22,6 +22,8 @@ use commands::{
     voice::*,
 };
 
+use tracing::{info, error};
+
 mod apis;
 mod util;
 mod commands;
@@ -31,7 +33,7 @@ struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
     async fn ready(&self, _: Context, ready: Ready) {
-        println!("{} is ready.", ready.user.name);
+        info!("{} is ready.", ready.user.name);
     }
 }
 
@@ -54,6 +56,7 @@ struct Voice;
 #[tokio::main]
 async fn main() {
     dotenv::dotenv().expect("Failed to load from .env file.");
+    tracing_subscriber::fmt().init();
 
     // Get token from env var.
     let token = env::var("DISCORD_TOKEN")
@@ -96,6 +99,6 @@ async fn main() {
 
     // Start the client.
     if let Err(why) = client.start().await {
-        println!("Client error: {:?}", why);
+        error!("Client error: {:?}", why);
     }
 }

@@ -2,6 +2,8 @@ extern crate json;
 
 use reqwest::{Client, Result};
 
+use tracing::*;
+
 use crate::apis::common::Posts;
 
 
@@ -17,6 +19,8 @@ pub(crate) async fn get_posts(tags: Option<Vec<String>>) -> Result<Posts> {
             .text()
             .await?;
 
+        debug!(test = "Kona Post Response", response = resp.as_str());
+
         Ok(Posts{posts: json::parse(resp.as_str()).unwrap()})
 
     } else {
@@ -25,6 +29,8 @@ pub(crate) async fn get_posts(tags: Option<Vec<String>>) -> Result<Posts> {
             .await?
             .text()
             .await?;
+
+        debug!(test = "Kona Post Response", response = resp.as_str());
 
         Ok(Posts{posts: json::parse(resp.as_str()).unwrap()})
     }

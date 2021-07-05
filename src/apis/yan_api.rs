@@ -2,6 +2,8 @@ extern crate json;
 
 use reqwest::{Client, Method, Result};
 
+use tracing::*;
+
 use crate::apis::common::Posts;
 
 
@@ -17,6 +19,8 @@ pub async fn get_posts(tags: Option<Vec<String>>) -> Result<Posts> {
             .text()
             .await?;
 
+        debug!(test = "Yan Post Response", response = resp.as_str());
+
         Ok(Posts{posts: json::parse(resp.as_str()).unwrap()})
     } else {
         let resp = client.request(Method::GET, "https://yande.re/post.json")
@@ -24,6 +28,8 @@ pub async fn get_posts(tags: Option<Vec<String>>) -> Result<Posts> {
             .await?
             .text()
             .await?;
+
+        debug!(test = "Yan Post Response", response = resp.as_str());
 
         Ok(Posts{posts: json::parse(resp.as_str()).unwrap()})
     }
