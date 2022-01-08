@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::sync::Arc;
 
@@ -7,13 +7,14 @@ use songbird::SerenityInit;
 use serenity::{
     async_trait,
     framework::standard::{
+        StandardFramework,
+        CommandResult,
         macros::*,
     },
     http::Http,
-    model::{gateway::Ready},
+    model::{gateway::Ready, channel::Message},
     prelude::*
 };
-use serenity::framework::StandardFramework;
 
 use commands::{
     spins::*,
@@ -21,6 +22,8 @@ use commands::{
     utility::*,
     voice::*,
 };
+
+use regex::*;
 
 use tracing::{info, error};
 
@@ -32,6 +35,14 @@ struct Handler;
 
 #[async_trait]
 impl EventHandler for Handler {
+    async fn message(&self, ctx: Context, message: Message) {
+        let re = Regex::new(r"^.*(ifunny.co/picture).*$").unwrap();
+        if re.is_match(message.content.as_str()) {
+            let url = ifunny_replace(&message);
+            message.channel_id.send_message(&ctx.http, |m| m.content(url)).await;
+        }
+    }
+
     async fn ready(&self, _: Context, ready: Ready) {
         info!("{} is ready.", ready.user.name);
     }

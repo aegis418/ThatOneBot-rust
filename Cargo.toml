@@ -18,6 +18,8 @@ songbird = "*"
 regex = "1"
 tracing = "0.1"
 tracing-subscriber = "0.2"
+ureq = "*"
+scraper = "*"
 
 [dependencies.serenity]
 default-features = false

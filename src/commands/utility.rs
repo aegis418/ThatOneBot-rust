@@ -1,10 +1,13 @@
 use std::env;
 use std::path::Path;
+use std::sync::Arc;
 
 use serenity::framework::standard::{Args, CommandResult, macros::command};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 use tokio::time::{Duration, sleep};
+
+use scraper::{Html, Selector};
 
 #[command]
 #[aliases("ga")]
@@ -62,4 +65,23 @@ async fn boxes(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     };
 
     Ok(())
+}
+
+pub fn ifunny_replace(message: &Message) -> String {
+    let url = message.content.as_str();
+    let resp = ureq::get(url).call().unwrap();
+    let text = resp.into_string().unwrap();
+
+    let doc = Html::parse_document(&text);
+    let img_sel = Selector::parse("img").unwrap();
+
+    let new_url = doc
+        .select(&img_sel)
+        .nth(1)
+        .unwrap()
+        .value()
+        .attr("src")
+        .unwrap();
+
+    String::from(new_url)
 }
