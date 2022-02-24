@@ -14,7 +14,7 @@ rand = "*"
 roxmltree = "0.14"
 tokio = {version = "1", features = ["full"]}
 rusqlite = {version = "0.24", features = ["bundled"]}
-songbird = "*"
+songbird = {version = "*", features = ["yt-dlp"]}
 regex = "1"
 tracing = "0.1"
 tracing-subscriber = "0.2"

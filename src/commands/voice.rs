@@ -10,6 +10,7 @@ use crate::apis::ocremix_api::*;
 use std::ops::Deref;
 
 // TODO: Expand on this using a hashmap to allow multiple guilds.
+#[derive(Clone, Debug)]
 pub enum NowPlaying {
     None,
     Youtube {
@@ -224,10 +225,39 @@ async fn stop(ctx: &Context, msg: &Message) -> CommandResult {
     Ok(())
 }
 
+async fn update_now_playing(ctx: &Context) {
+    let now_playing_lock = {
+        let data_read = ctx.data.read().await;
+        data_read.get::<NowPlaying>().expect("Expected NowPlaying in TypeMap.").clone()
+    };
+
+    let cur_info_lock = now_playing_lock.read().await;
+    let cur_info = cur_info_lock.deref().clone();
+    // println!("{:?}", cur_info);
+    drop(cur_info_lock);
+    match cur_info {
+        NowPlaying::None => {return;}
+        NowPlaying::Youtube { .. } => {return}
+        NowPlaying::OCRemix { playing, track } => {
+            {
+                let mut np = now_playing_lock.write().await;
+                *np = NowPlaying::OCRemix {
+                    track: track.clone(),
+                    playing: get_current_song(playing.station_id).await.unwrap()
+                };
+            }
+        }
+    }
+
+
+}
+
 #[command]
 #[only_in(guilds)]
 #[aliases("np")]
 async fn now_playing(ctx: &Context, msg: &Message) -> CommandResult {
+    update_now_playing(ctx).await;
+
     let guild = msg.guild(&ctx.cache).await.unwrap();
     let _guild_id = guild.id;
 
@@ -235,9 +265,9 @@ async fn now_playing(ctx: &Context, msg: &Message) -> CommandResult {
     let now_playing = now_playing_lock.get::<NowPlaying>().expect("Expected NowPlaying in data").clone();
 
     {
-        let now_playing =  now_playing.read().await;
+        let now_playing_info =  now_playing.read().await;
 
-        match now_playing.deref() {
+        match now_playing_info.deref() {
             NowPlaying::None => {
                 msg.channel_id.say(&ctx.http, "Nothing is playing").await?;
             }
@@ -251,7 +281,8 @@ async fn now_playing(ctx: &Context, msg: &Message) -> CommandResult {
                     })
                 }).await?;
             }
-            NowPlaying::OCRemix { playing, .. } => {
+            NowPlaying::OCRemix { playing, track } => {
+
                 let url = match playing.url.as_ref() {
                     None => {String::from("")}
                     Some(url) => {String::from(url)}

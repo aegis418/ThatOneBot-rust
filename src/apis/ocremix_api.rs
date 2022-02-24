@@ -2,6 +2,7 @@ use reqwest::{Client, Result};
 
 extern crate json;
 
+#[derive(Clone, Debug)]
 pub struct OCRemix {
     pub station_id: StationID,
     pub url: Option<String>,
@@ -22,7 +23,7 @@ impl OCRemix {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum StationID {
     Game,
     OCR,
@@ -108,6 +109,8 @@ pub async fn get_current_song(sid: StationID) -> Result<OCRemix> {
     } else {
         None
     };
+
+    // println!("{}", title);
 
     Ok(OCRemix::new(sid, url, title, album, album_url))
 }
