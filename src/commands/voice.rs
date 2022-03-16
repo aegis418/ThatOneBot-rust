@@ -157,7 +157,7 @@ async fn play_ocremix(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
     if let Some(handler_lock) = manager.get(guild_id) {
         let mut handler = handler_lock.lock().await;
 
-        let source = match songbird::ytdl(&*stream_url).await {
+        let source = match songbird::ffmpeg(&*stream_url).await {
             Ok(source) => source,
             Err(why) => {
                 println!("Err starting source: {:?}", why);
