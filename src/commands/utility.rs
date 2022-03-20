@@ -1,6 +1,5 @@
 use std::env;
 use std::path::Path;
-use std::sync::Arc;
 
 use serenity::framework::standard::{Args, CommandResult, macros::command};
 use serenity::model::prelude::*;

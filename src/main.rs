@@ -1,20 +1,22 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashSet};
 use std::env;
 use std::sync::Arc;
 
-use songbird::SerenityInit;
-
+use regex::*;
 use serenity::{
     async_trait,
     framework::standard::{
-        StandardFramework,
-        CommandResult,
         macros::*,
+        StandardFramework,
     },
     http::Http,
-    model::{gateway::Ready, channel::Message},
-    prelude::*
+    model::{channel::Message, gateway::Ready},
+    prelude::*,
 };
+use serenity::model::id::{GuildId};
+use serenity::model::prelude::{VoiceState};
+use songbird::SerenityInit;
+use tracing::{error, info};
 
 use commands::{
     spins::*,
@@ -22,10 +24,6 @@ use commands::{
     utility::*,
     voice::*,
 };
-
-use regex::*;
-
-use tracing::{info, error};
 
 mod apis;
 mod util;
@@ -39,12 +37,37 @@ impl EventHandler for Handler {
         let re = Regex::new(r"^.*(ifunny.co/picture).*$").unwrap();
         if re.is_match(message.content.as_str()) {
             let url = ifunny_replace(&message);
-            message.channel_id.send_message(&ctx.http, |m| m.content(url)).await;
+            let _ = message.channel_id.send_message(&ctx.http, |m| m.content(url)).await;
         }
     }
 
     async fn ready(&self, _: Context, ready: Ready) {
         info!("{} is ready.", ready.user.name);
+    }
+
+    async fn voice_state_update(&self, _ctx: Context, _: Option<GuildId>, _old: Option<VoiceState>, _new: VoiceState) {
+        // Do something when someone leaves.
+        match _old {
+            None => {}
+            Some(state) => {
+                match state.channel_id {
+                    None => {}
+                    Some(cid) => {
+                        // Disconnect bot if it is the only connection left in a voice channel.
+                        let channel = cid.to_channel(&_ctx.http).await.unwrap().guild().unwrap();
+                        let members = channel.members(&_ctx.cache).await.unwrap();
+                        // println!("OLD: {:?}", members);
+                        if members.len() == 1 {
+                            if members[0].user.bot {
+                                songbird::get(&_ctx).await.unwrap().remove(channel.guild_id).await;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // Do something when someone connects.
+        // _new
     }
 }
 
@@ -80,7 +103,7 @@ async fn main() {
             let mut owner = HashSet::new();
             owner.insert(info.owner.id);
             (owner, info.id)
-        },
+        }
         Err(why) => panic!("Could not access app info: {:?}", why),
     };
 

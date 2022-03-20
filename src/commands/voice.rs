@@ -281,7 +281,7 @@ async fn now_playing(ctx: &Context, msg: &Message) -> CommandResult {
                     })
                 }).await?;
             }
-            NowPlaying::OCRemix { playing, track } => {
+            NowPlaying::OCRemix { playing, track: _ } => {
 
                 let url = match playing.url.as_ref() {
                     None => {String::from("")}
