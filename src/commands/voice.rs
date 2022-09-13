@@ -29,7 +29,7 @@ impl TypeMapKey for NowPlaying {
 #[command]
 #[only_in(guilds)]
 async fn join(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild = msg.guild(&ctx.cache).await.unwrap();
+    let guild = msg.guild(&ctx.cache).unwrap();
     let guild_id = guild.id;
 
     let channel_id = guild
@@ -55,7 +55,7 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 #[only_in(guilds)]
 async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild = msg.guild(&ctx.cache).await.unwrap();
+    let guild = msg.guild(&ctx.cache).unwrap();
     let guild_id = guild.id;
 
     let manager = songbird::get(ctx).await
@@ -93,7 +93,7 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         return Ok(());
     }
 
-    let guild = msg.guild(&ctx.cache).await.unwrap();
+    let guild = msg.guild(&ctx.cache).unwrap();
     let guild_id = guild.id;
 
     let manager = songbird::get(ctx).await
@@ -148,7 +148,7 @@ async fn play_ocremix(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
     let station_id = StationID::from(station);
     let stream_url = station_id.get_stream_url().await;
 
-    let guild = msg.guild(&ctx.cache).await.unwrap();
+    let guild = msg.guild(&ctx.cache).unwrap();
     let guild_id = guild.id;
 
     let manager = songbird::get(ctx).await
@@ -194,7 +194,7 @@ async fn play_ocremix(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
 #[command]
 #[only_in(guilds)]
 async fn stop(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild = msg.guild(&ctx.cache).await.unwrap();
+    let guild = msg.guild(&ctx.cache).unwrap();
     let guild_id = guild.id;
 
     let manager = songbird::get(ctx).await
@@ -258,7 +258,7 @@ async fn update_now_playing(ctx: &Context) {
 async fn now_playing(ctx: &Context, msg: &Message) -> CommandResult {
     update_now_playing(ctx).await;
 
-    let guild = msg.guild(&ctx.cache).await.unwrap();
+    let guild = msg.guild(&ctx.cache).unwrap();
     let _guild_id = guild.id;
 
     let now_playing_lock = ctx.data.read().await;

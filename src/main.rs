@@ -3,19 +3,29 @@ use std::env;
 use std::sync::Arc;
 
 use regex::*;
+
+use songbird::SerenityInit;
+use serenity::client::Context;
+
 use serenity::{
     async_trait,
-    framework::standard::{
-        macros::*,
+    client::{Client, EventHandler},
+    framework::{
         StandardFramework,
+        standard::{
+            Args, CommandResult,
+            macros::{command, group}
+        }
     },
     http::Http,
     model::{channel::Message, gateway::Ready},
     prelude::*,
+    Result as SerenityResult,
 };
+
 use serenity::model::id::{GuildId};
 use serenity::model::prelude::{VoiceState};
-use songbird::SerenityInit;
+
 use tracing::{error, info};
 
 use commands::{
@@ -45,7 +55,7 @@ impl EventHandler for Handler {
         info!("{} is ready.", ready.user.name);
     }
 
-    async fn voice_state_update(&self, _ctx: Context, _: Option<GuildId>, _old: Option<VoiceState>, _new: VoiceState) {
+    async fn voice_state_update(&self, _ctx: Context, _old: Option<VoiceState>, _new: VoiceState) {
         // Do something when someone leaves.
         match _old {
             None => {}
@@ -96,7 +106,7 @@ async fn main() {
     let token = env::var("DISCORD_TOKEN")
         .expect("Expected a token env variable");
 
-    let http = Http::new_with_token(&token);
+    let http = Http::new(&token);
 
     let (owner, _bot_id) = match http.get_current_application_info().await {
         Ok(info) => {
@@ -116,8 +126,10 @@ async fn main() {
         .group(&TAGS_GROUP)
         .group(&VOICE_GROUP);
 
+    let intents = GatewayIntents::non_privileged() | GatewayIntents::privileged();
+
     // Build the bot client
-    let mut client = Client::builder(&token)
+    let mut client = Client::builder(&token, intents)
         .framework(framework)
         .event_handler(Handler)
         .register_songbird()
