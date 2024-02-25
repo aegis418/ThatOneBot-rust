@@ -1,4 +1,7 @@
+use std::io::empty;
 use std::iter::FromIterator;
+use serenity::all::{CreateEmbed, CreateMessage};
+use serenity::all::RoleAction::Create;
 
 use serenity::framework::standard::{Args, CommandResult, macros::command};
 use serenity::model::prelude::*;
@@ -16,13 +19,10 @@ async fn dan(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         let posts = dan_api::get_posts(None).await.unwrap();
         let post_url = posts.get_random_post();
         match post_url {
-            Some(str) => msg.channel_id.send_message(&ctx.http, |m| {
-                m.embed(|e| {
-                    e.image(str);
-                    e.color(10898598);
-
-                    e })
-            }).await?,
+            Some(str) => {
+                let message = CreateMessage::new().embed(CreateEmbed::new().image(str).color(10898598));
+                msg.channel_id.send_message(&ctx.http, message).await?
+            },
             None => msg.reply(&ctx.http, "No results found.").await?,
         };
 
@@ -33,13 +33,11 @@ async fn dan(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         let posts = dan_api::get_posts(Some(tags)).await.unwrap();
         let post_url = posts.get_random_post();
         match post_url {
-            Some(str) => msg.channel_id.send_message(&ctx.http, |m| {
-                m.embed(|e| {
-                    e.image(str);
-                    e.color(10898598);
-
-                    e })
-            }).await?,
+            Some(str) => {
+                let embed = CreateEmbed::new().image(str).color(10898598);
+                let message = CreateMessage::new().embed(embed);
+                msg.channel_id.send_message(&ctx.http, message).await?
+            },
             None => msg.reply(&ctx.http, "No results found.").await?,
         };
     }
@@ -53,13 +51,11 @@ async fn yan(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         let posts = yan_api::get_posts(None).await.unwrap();
         let post_url = posts.get_random_post();
         match post_url {
-            Some(str) => msg.channel_id.send_message(&ctx.http, |m| {
-                m.embed(|e| {
-                    e.image(str);
-                    e.color(10898598);
-
-                    e })
-            }).await?,
+            Some(str) => {
+                let embed = CreateEmbed::new().image(str).color(10898598);
+                let message = CreateMessage::new().embed(embed);
+                msg.channel_id.send_message(&ctx.http, message).await?
+            },
             None => msg.reply(&ctx.http, "No results found.").await?,
         };
 
@@ -70,13 +66,10 @@ async fn yan(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         let posts = yan_api::get_posts(Some(tags)).await.unwrap();
         let post_url = posts.get_random_post();
         match post_url {
-            Some(str) => msg.channel_id.send_message(&ctx.http, |m| {
-                m.embed(|e| {
-                    e.image(str);
-                    e.color(10898598);
-
-                    e })
-            }).await?,
+            Some(str) => {
+                let message = CreateMessage::new().embed(CreateEmbed::new().image(str).color(10898598));
+                msg.channel_id.send_message(&ctx.http, message).await?
+            },
             None => msg.reply(&ctx.http, "No results found.").await?,
         };
     }
@@ -90,13 +83,11 @@ async fn kona(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         let posts = kona_api::get_posts(None).await.unwrap();
         let post_url = posts.get_random_post();
         match post_url {
-            Some(str) => msg.channel_id.send_message(&ctx.http, |m| {
-                m.embed(|e| {
-                    e.image(str);
-                    e.color(10898598);
-
-                    e })
-            }).await?,
+            Some(str) => {
+                let embed = CreateEmbed::new().image(str).color(10898598);
+                let message = CreateMessage::new().embed(embed);
+                msg.channel_id.send_message(&ctx.http, message).await?
+            },
             None => msg.reply(&ctx.http, "No results found.").await?,
         };
 
@@ -107,13 +98,10 @@ async fn kona(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         let posts = kona_api::get_posts(Some(tags)).await.unwrap();
         let post_url = posts.get_random_post();
         match post_url {
-            Some(str) => msg.channel_id.send_message(&ctx.http, |m| {
-                m.embed(|e| {
-                    e.image(str);
-                    e.color(10898598);
-
-                    e })
-            }).await?,
+            Some(str) => {
+                let message = CreateMessage::new().embed(CreateEmbed::new().image(str).color(10898598));
+                msg.channel_id.send_message(&ctx.http, message).await?
+            },
             None => msg.reply(&ctx.http, "No results found.").await?,
         };
     }
@@ -126,13 +114,11 @@ async fn safe(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     if args.is_empty() {
         let url = safe_api::get_random_post(None).await;
         match url {
-            Some(str) => msg.channel_id.send_message(&ctx.http, |m| {
-                m.embed(|e| {
-                    e.image(str);
-                    e.color(10898598);
-
-                    e })
-            }).await?,
+            Some(str) => {
+                let embed = CreateEmbed::new().image(str).color(10898598);
+                let message = CreateMessage::new().embed(embed);
+                msg.channel_id.send_message(&ctx.http, message).await?
+            },
             None => msg.reply(&ctx.http, "No results found.").await?,
         };
     } else {
@@ -141,13 +127,10 @@ async fn safe(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             .collect::<Vec<String>>());
         let url = safe_api::get_random_post(Some(tags)).await;
         match url{
-            Some(str) => msg.channel_id.send_message(&ctx.http, |m| {
-                m.embed(|e| {
-                    e.image(str);
-                    e.color(10898598);
-
-                    e })
-            }).await?,
+            Some(str) => {
+                let message = CreateMessage::new().embed(CreateEmbed::new().image(str).color(10898598));
+                msg.channel_id.send_message(&ctx.http, message).await?
+            },
             None => msg.reply(&ctx.http, "No results found.").await?,
         };
     }
@@ -171,19 +154,13 @@ async fn auto_spin(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
                 let tag_url = format!("https://danbooru.donmai.us/posts?tags={}", tag);
                 let tag_vec = vec![tag.clone()];
                 let image = dan_api::get_posts(Some(tag_vec)).await?.get_random_post().unwrap();
-                msg.channel_id.send_message(&ctx.http, |m| {
-                    m.embed(|e| {
-                        e.description(format!("Tag: [{}]({}) \t Remaining: {}", tag, tag_url, i));
-                        e.color(58853)
-                    })
-                }).await?;
+                let tag_embed = CreateEmbed::new().description(format!("Tag: [{}]({}) \t Remaining: {}", tag, tag_url, i)).color(58853);
+                let tag_message = CreateMessage::new().embed(tag_embed);
+                msg.channel_id.send_message(&ctx.http, tag_message).await?;
 
-                msg.channel_id.send_message(&ctx.http, |m| {
-                    m.embed(|e| {
-                        e.image(image);
-                        e.color(10898598)
-                    })
-                }).await?;
+                let embed = CreateEmbed::new().image(image).color(10898598);
+                let message = CreateMessage::new().embed(embed);
+                msg.channel_id.send_message(&ctx.http, message).await?;
 
                 sleep(Duration::from_secs(3)).await;
             }

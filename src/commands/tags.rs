@@ -2,6 +2,8 @@ use std::env;
 use std::path::Path;
 
 use rusqlite::{Connection, params, Result};
+use serenity::all::{CreateAttachment, CreateMessage};
+use serenity::builder::CreateEmbed;
 use serenity::framework::standard::{Args, CommandResult, macros::command};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
@@ -35,17 +37,17 @@ impl TagsDbConnection {
 
     fn insert(&mut self, tag: String, content: String) -> Result<usize> {
         let mut stmt = self.conn.prepare("INSERT INTO tags (Name, Content) VALUES (?, ?)")?;
-        stmt.execute(&[tag, content])
+        stmt.execute(params![tag, content])
     }
 
     fn remove(&mut self, tag: String) -> Result<usize> {
         let mut stmt = self.conn.prepare("DELETE FROM tags WHERE Name=?")?;
-        stmt.execute(&[tag])
+        stmt.execute(params![tag])
     }
 
     fn update(&mut self, tag: String, content: String) -> Result<usize> {
         let mut stmt = self.conn.prepare("UPDATE tags SET Content=? WHERE Name=?")?;
-        stmt.execute(&[content, tag])
+        stmt.execute(params![content, tag])
     }
 
     fn find_tag(&mut self, tag: String) -> Option<Tag> {
@@ -99,18 +101,12 @@ async fn tag(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                 let image_path =
                     Path::new(env::var("BOT_STORAGE_LOCATION").expect("BOT_STORAGE_LOCATION not in environment.").as_str())
                         .join(&t.content);
-                let path_vec = vec![image_path.to_str().unwrap()];
-                msg.channel_id.send_files(&ctx.http, path_vec, |m| m).await?
+                let path_vec = vec![CreateAttachment::path(image_path.to_str().unwrap()).await?];
+                msg.channel_id.send_files(&ctx.http, path_vec, CreateMessage::new()).await?
             } else if util::string_ends_with_any(&t.content, vec![".jpg", ".jpeg", ".png", ".gif", ".gifv"]) {
-                msg.channel_id.send_message(&ctx.http, |m| {
-                    m.embed(|e| {
-                        e.image(&t.content)
-                    })
-                }).await?
+                msg.channel_id.send_message(&ctx.http, CreateMessage::new().embed(CreateEmbed::new().image(&t.content))).await?
             } else {
-                msg.channel_id.send_message(&ctx.http, |m| {
-                    m.content(&t.content)
-                }).await?
+                msg.channel_id.send_message(&ctx.http, CreateMessage::new().content(&t.content)).await?
             }
         },
         None => msg.reply(&ctx.http, "Tag not found.").await?,
@@ -182,9 +178,7 @@ async fn tag_raw(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
     let mut conn = TagsDbConnection::new();
     let tag = conn.find_tag(name);
     match tag {
-        Some(t) => msg.channel_id.send_message(&ctx.http, |m| {
-            m.content(format!("```{}```", t.content))
-        }).await?,
+        Some(t) => msg.channel_id.send_message(&ctx.http, CreateMessage::new().content(format!("```{}```", t.content))).await?,
         None => msg.reply(&ctx.http, "Tag not found.").await?,
     };
     conn.close();
@@ -198,10 +192,8 @@ async fn tag_help(ctx: &Context, msg: &Message) -> CommandResult {
         let mut conn = TagsDbConnection::new();
         let tag_names = conn.get_all_tag_names();
 
-
-        user_dm_channel.send_message(&ctx.http, |m| {
-            m.content(format!("The list of tags is: ```{}```", tag_names.join("\n")))
-        }).await?;
+        let message = CreateMessage::new().content(format!("The list of tags is: ```{}```", tag_names.join("\n")));
+        user_dm_channel.send_message(&ctx.http, message).await?;
 
     } else {
         println!("Failed to create dm channel.");

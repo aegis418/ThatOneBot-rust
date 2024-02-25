@@ -3,18 +3,23 @@ use serenity::model::prelude::*;
 use serenity::prelude::*;
 use songbird::tracks::TrackHandle;
 use std::sync::Arc;
+use songbird::input::{YoutubeDl, HttpRequest, Compose, AuxMetadata};
 
 use regex::Regex;
 
 use crate::apis::ocremix_api::*;
 use std::ops::Deref;
+use serenity::all::CreateEmbed;
+use serenity::builder::CreateMessage;
+use crate::HttpKey;
 
 // TODO: Expand on this using a hashmap to allow multiple guilds.
 #[derive(Clone, Debug)]
 pub enum NowPlaying {
     None,
     Youtube {
-        track: TrackHandle
+        track: TrackHandle,
+        meta: AuxMetadata
     },
     OCRemix {
         track: TrackHandle,
@@ -29,12 +34,14 @@ impl TypeMapKey for NowPlaying {
 #[command]
 #[only_in(guilds)]
 async fn join(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild = msg.guild(&ctx.cache).unwrap();
-    let guild_id = guild.id;
+    let (guild_id, channel_id) = {
+        let guild = msg.guild(&ctx.cache).unwrap();
+        let channel_id = guild.voice_states
+            .get(&msg.author.id)
+            .and_then(|voice_state| voice_state.channel_id);
 
-    let channel_id = guild
-        .voice_states.get(&msg.author.id)
-        .and_then(|voice_state| voice_state.channel_id);
+        (guild.id, channel_id)
+    };
 
     let connect_to = match channel_id {
         Some(channel) => channel,
@@ -55,8 +62,7 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 #[only_in(guilds)]
 async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild = msg.guild(&ctx.cache).unwrap();
-    let guild_id = guild.id;
+    let guild_id = msg.guild_id.unwrap();
 
     let manager = songbird::get(ctx).await
         .expect("Songbird not initialized").clone();
@@ -93,8 +99,12 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         return Ok(());
     }
 
-    let guild = msg.guild(&ctx.cache).unwrap();
-    let guild_id = guild.id;
+    let guild_id = msg.guild_id.unwrap();
+
+    let http_client = {
+        let data = ctx.data.read().await;
+        data.get::<HttpKey>().cloned().expect("Should be in typemap.")
+    };
 
     let manager = songbird::get(ctx).await
         .expect("Songbird Voice client placed in at initialisation.").clone();
@@ -102,18 +112,20 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     if let Some(handler_lock) = manager.get(guild_id) {
         let mut handler = handler_lock.lock().await;
 
-        let source = match songbird::ytdl(&url).await {
-            Ok(source) => source,
-            Err(why) => {
-                println!("Err starting source: {:?}", why);
+        // let mut source = match songbird::ytdl(&url).await {
+        //     Ok(source) => source,
+        //     Err(why) => {
+        //         println!("Err starting source: {:?}", why);
+        //
+        //         msg.channel_id.say(&ctx.http, "Error sourcing ffmpeg").await?;
+        //
+        //         return Ok(());
+        //     },
+        // };
 
-                msg.channel_id.say(&ctx.http, "Error sourcing ffmpeg").await?;
+        let mut src = YoutubeDl::new(http_client, url);
 
-                return Ok(());
-            },
-        };
-
-        let track_handle = handler.play_source(source);
+        let track_handle = handler.play_input(src.clone().into());
 
         let now_playing_lock = {
             let data_read = ctx.data.read().await;
@@ -123,8 +135,9 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         // Update global now playing.
         {
             let mut now_playing = now_playing_lock.write().await;
+            let metadata = src.aux_metadata().await.unwrap();
 
-            *now_playing = NowPlaying::Youtube { track: track_handle.clone() }
+            *now_playing = NowPlaying::Youtube { track: track_handle.clone(), meta: metadata }
 
         }
 
@@ -148,8 +161,12 @@ async fn play_ocremix(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
     let station_id = StationID::from(station);
     let stream_url = station_id.get_stream_url().await;
 
-    let guild = msg.guild(&ctx.cache).unwrap();
-    let guild_id = guild.id;
+    let guild_id = msg.guild_id.unwrap();
+
+    let http_client = {
+        let data = ctx.data.read().await;
+        data.get::<HttpKey>().cloned().expect("Should be in typemap.")
+    };
 
     let manager = songbird::get(ctx).await
         .expect("Songbird not initialized").clone();
@@ -157,18 +174,20 @@ async fn play_ocremix(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
     if let Some(handler_lock) = manager.get(guild_id) {
         let mut handler = handler_lock.lock().await;
 
-        let source = match songbird::ffmpeg(&*stream_url).await {
-            Ok(source) => source,
-            Err(why) => {
-                println!("Err starting source: {:?}", why);
+        // let source = match songbird::ffmpeg(&*stream_url).await {
+        //     Ok(source) => source,
+        //     Err(why) => {
+        //         println!("Err starting source: {:?}", why);
+        //
+        //         msg.channel_id.say(&ctx.http, "Error sourcing ffmpeg").await?;
+        //
+        //         return Ok(());
+        //     },
+        // };
 
-                msg.channel_id.say(&ctx.http, "Error sourcing ffmpeg").await?;
+        let src = HttpRequest::new(http_client, stream_url);
 
-                return Ok(());
-            },
-        };
-
-        let track_handle = handler.play_source(source);
+        let track_handle = handler.play_input(src.clone().into());
 
         let now_playing_lock = {
             let data_read = ctx.data.read().await;
@@ -194,8 +213,7 @@ async fn play_ocremix(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
 #[command]
 #[only_in(guilds)]
 async fn stop(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild = msg.guild(&ctx.cache).unwrap();
-    let guild_id = guild.id;
+    let guild_id = msg.guild_id.unwrap();
 
     let manager = songbird::get(ctx).await
         .expect("Songbird not initialized").clone();
@@ -258,9 +276,6 @@ async fn update_now_playing(ctx: &Context) {
 async fn now_playing(ctx: &Context, msg: &Message) -> CommandResult {
     update_now_playing(ctx).await;
 
-    let guild = msg.guild(&ctx.cache).unwrap();
-    let _guild_id = guild.id;
-
     let now_playing_lock = ctx.data.read().await;
     let now_playing = now_playing_lock.get::<NowPlaying>().expect("Expected NowPlaying in data").clone();
 
@@ -271,15 +286,10 @@ async fn now_playing(ctx: &Context, msg: &Message) -> CommandResult {
             NowPlaying::None => {
                 msg.channel_id.say(&ctx.http, "Nothing is playing").await?;
             }
-            NowPlaying::Youtube { track } => {
-                let metadata = track.metadata();
-                msg.channel_id.send_message(&ctx.http, |m| {
-                    m.embed(|e| {
-                        e.title(metadata.title.as_ref().unwrap());
-                        e.url(metadata.source_url.as_ref().unwrap());
-                        e.color(16741516)
-                    })
-                }).await?;
+            NowPlaying::Youtube { track, meta } => {
+                // let metadata = track.metadata();
+                let embed = CreateEmbed::new().title(String::from(meta.title.as_ref().unwrap())).url(meta.source_url.as_ref().unwrap()).color(16741516);
+                msg.channel_id.send_message(&ctx.http, CreateMessage::new().embed(embed)).await?;
             }
             NowPlaying::OCRemix { playing, track: _ } => {
 
@@ -288,16 +298,23 @@ async fn now_playing(ctx: &Context, msg: &Message) -> CommandResult {
                     Some(url) => {String::from(url)}
                 };
 
-                msg.channel_id.send_message(&ctx.http, |m| {
-                    m.embed(|e| {
-                        e.color(10276252);
-                        e.title(&playing.title);
-                        e.url(url);
-                        e.thumbnail(&playing.album_url);
-                        let station_name: &String = &playing.station_id.into();
-                        e.description(format!("Album: {} \nStation: {}", playing.album, station_name))
-                    })
-                }).await?;
+                let station_name: &String = &playing.station_id.into();
+                let embed = CreateEmbed::new().color(10276252)
+                    .title(&playing.title)
+                    .url(url)
+                    .thumbnail(&playing.album_url)
+                    .description(format!("Album: {}\nStation: {}", playing.album, station_name));
+                msg.channel_id.send_message(&ctx.http, CreateMessage::new().embed(embed)).await?;
+                // msg.channel_id.send_message(&ctx.http, |m| {
+                //     m.embed(|e| {
+                //         e.color(10276252);
+                //         e.title(&playing.title);
+                //         e.url(url);
+                //         e.thumbnail(&playing.album_url);
+                //         let station_name: &String = &playing.station_id.into();
+                //         e.description(format!("Album: {} \nStation: {}", playing.album, station_name))
+                //     })
+                // }).await?;
             }
         }
 

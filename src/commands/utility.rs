@@ -7,6 +7,8 @@ use serenity::prelude::*;
 use tokio::time::{Duration, sleep};
 
 use scraper::{Html, Selector};
+use serenity::all::CreateMessage;
+use serenity::builder::{CreateAttachment, CreateEmbed};
 
 #[command]
 #[aliases("ga")]
@@ -20,15 +22,10 @@ async fn get_avatar(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
 
     let user = uid.to_user(&ctx.http).await;
     match user {
-        Ok(usr) => msg.channel_id.send_message(&ctx.http, |m| {
-            m.embed(|e| {
-                e.image(usr.avatar_url().unwrap());
-
-                e
-            });
-
-            m
-        }).await?,
+        Ok(usr) => {
+            let message = CreateMessage::new().embed(CreateEmbed::new().image(usr.avatar_url().unwrap()));
+            msg.channel_id.send_message(&ctx.http, message).await?
+        },
         Err(_err) => msg.reply(&ctx.http, "No user with given id").await?
     };
 
@@ -58,8 +55,8 @@ async fn boxes(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     };
 
     for _ in 0..num {
-        let list = vec![image_path.to_str().unwrap()];
-        msg.channel_id.send_files(&ctx.http, list, |m| m ).await?;
+        let list = vec![CreateAttachment::path(image_path.to_str().unwrap()).await?];
+        msg.channel_id.send_files(&ctx.http, list, CreateMessage::new()).await?;
         sleep(Duration::from_millis(500)).await;
     };
 

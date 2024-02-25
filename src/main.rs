@@ -6,6 +6,7 @@ use regex::*;
 
 use songbird::SerenityInit;
 use serenity::client::Context;
+use reqwest::Client as HttpClient;
 
 use serenity::{
     async_trait,
@@ -22,6 +23,8 @@ use serenity::{
     prelude::*,
     Result as SerenityResult,
 };
+use serenity::builder::CreateMessage;
+use serenity::framework::standard::Configuration;
 
 use serenity::model::id::{GuildId};
 use serenity::model::prelude::{VoiceState};
@@ -39,6 +42,12 @@ mod apis;
 mod util;
 mod commands;
 
+struct HttpKey;
+
+impl TypeMapKey for HttpKey {
+    type Value = HttpClient;
+}
+
 struct Handler;
 
 #[async_trait]
@@ -47,7 +56,8 @@ impl EventHandler for Handler {
         let re = Regex::new(r"^.*(ifunny.co/picture).*$").unwrap();
         if re.is_match(message.content.as_str()) {
             let url = ifunny_replace(&message);
-            let _ = message.channel_id.send_message(&ctx.http, |m| m.content(url)).await;
+            let mess = CreateMessage::new().content(url);
+            let _ = message.channel_id.send_message(&ctx.http, mess).await;
         }
     }
 
@@ -65,7 +75,7 @@ impl EventHandler for Handler {
                     Some(cid) => {
                         // Disconnect bot if it is the only connection left in a voice channel.
                         let channel = cid.to_channel(&_ctx.http).await.unwrap().guild().unwrap();
-                        let members = channel.members(&_ctx.cache).await.unwrap();
+                        let members = channel.members(&_ctx.cache).unwrap();
                         // println!("OLD: {:?}", members);
                         if members.len() == 1 {
                             if members[0].user.bot {
@@ -111,20 +121,19 @@ async fn main() {
     let (owner, _bot_id) = match http.get_current_application_info().await {
         Ok(info) => {
             let mut owner = HashSet::new();
-            owner.insert(info.owner.id);
+            owner.insert(info.owner.unwrap().id);
             (owner, info.id)
         }
         Err(why) => panic!("Could not access app info: {:?}", why),
     };
 
+
     let framework = StandardFramework::new()
-        .configure(|c| c
-            .owners(owner)
-            .prefix(";"))
         .group(&GENERAL_GROUP)
         .group(&SPINS_GROUP)
         .group(&TAGS_GROUP)
         .group(&VOICE_GROUP);
+    framework.configure(Configuration::new().owners(owner).prefix(";"));
 
     let intents = GatewayIntents::non_privileged() | GatewayIntents::privileged();
 
@@ -133,6 +142,7 @@ async fn main() {
         .framework(framework)
         .event_handler(Handler)
         .register_songbird()
+        .type_map_insert::<HttpKey>(HttpClient::new())
         .await
         .expect("Error creating client.");
 

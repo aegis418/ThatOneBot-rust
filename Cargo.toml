@@ -2,7 +2,7 @@
 name = "that-one-bot-rust"
 version = "0.1.0"
 authors = ["Tyler"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -11,13 +11,13 @@ json = "*"
 reqwest = {version = "0.11", features = ["json"]}
 dotenv = "0.15"
 rand = "*"
-roxmltree = "0.14"
+roxmltree = "0.19.0"
 tokio = {version = "1", features = ["full"]}
-rusqlite = {version = "0.24", features = ["bundled"]}
-songbird = {version = "*", features = ["yt-dlp"]}
+rusqlite = {version = "0.31.0", features = ["bundled"]}
+songbird = {version = "0.4", features = ["default", "builtin-queue"]}
 regex = "1"
 tracing = "0.1"
-tracing-subscriber = "0.2"
+tracing-subscriber = "0.3"
 ureq = "*"
 scraper = "*"
 
@@ -26,15 +26,20 @@ default-features = false
 features = [
     "builder",
     "cache",
+    "collector",
     "client",
     "framework",
     "gateway",
     "http",
     "model",
+    "voice_model",
     "standard_framework",
     "utils",
     "rustls_backend",
     "voice",
-    "voice-model",
 ]
-version = "0.11"
+version = "0.12"
+
+[dependencies.symphonia]
+version = "0.5.3"
+features = ["aac", "mp3", "flac"]
