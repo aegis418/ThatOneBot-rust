@@ -34,7 +34,7 @@ use crate::util::util;
 // }
 
 
-pub async fn get_random_post(tags: Option<Vec<String>>) -> Option<String> {
+pub async fn get_random_post(tags: Option<Vec<&str>>) -> Option<String> {
     let client = Client::new();
 
     let resp = if tags.is_some() {

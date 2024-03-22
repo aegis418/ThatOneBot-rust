@@ -33,13 +33,15 @@ features = [
     "http",
     "model",
     "voice_model",
-    "standard_framework",
     "utils",
     "rustls_backend",
     "voice",
 ]
 version = "0.12"
 
+[dependencies.poise]
+version = "0.6"
+
 [dependencies.symphonia]
-version = "0.5.3"
+version = "0.5.4"
 features = ["aac", "mp3", "flac"]

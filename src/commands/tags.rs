@@ -1,12 +1,11 @@
 use std::env;
 use std::path::Path;
 
+use poise::{CreateReply, serenity_prelude as serenity};
 use rusqlite::{Connection, params, Result};
 use serenity::all::{CreateAttachment, CreateMessage};
 use serenity::builder::CreateEmbed;
-use serenity::framework::standard::{Args, CommandResult, macros::command};
-use serenity::model::prelude::*;
-use serenity::prelude::*;
+use crate::{Context, Error};
 
 use crate::util::util;
 
@@ -86,13 +85,12 @@ impl TagsDbConnection {
     }
 }
 
-#[command]
-#[aliases("t")]
-#[sub_commands(tag_add, tag_remove, tag_update, tag_raw, tag_help)]
-#[num_args(1)]
-async fn tag(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+#[poise::command(prefix_command,
+    aliases("t"),
+    category = "Tags",
+    subcommands("tag_add", "tag_remove", "tag_update", "tag_raw", "tag_help"))]
+pub async fn tag(ctx: Context<'_>, tag: String) -> Result<(), Error> {
     // msg.reply(&ctx.http, "In tag.").await?;
-    let tag: String = args.single().unwrap();
     let mut conn = TagsDbConnection::new();
     let result = conn.find_tag(tag);
     match result {
@@ -101,48 +99,54 @@ async fn tag(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                 let image_path =
                     Path::new(env::var("BOT_STORAGE_LOCATION").expect("BOT_STORAGE_LOCATION not in environment.").as_str())
                         .join(&t.content);
-                let path_vec = vec![CreateAttachment::path(image_path.to_str().unwrap()).await?];
-                msg.channel_id.send_files(&ctx.http, path_vec, CreateMessage::new()).await?
+                // let path_vec = vec![CreateAttachment::path(image_path.to_str().unwrap()).await?];
+                // msg.channel_id.send_files(&ctx.http, path_vec, CreateMessage::new()).await?;
+                ctx.send(CreateReply::default().attachment(CreateAttachment::path(image_path.to_str().unwrap()).await.unwrap())).await?;
             } else if util::string_ends_with_any(&t.content, vec![".jpg", ".jpeg", ".png", ".gif", ".gifv"]) {
-                msg.channel_id.send_message(&ctx.http, CreateMessage::new().embed(CreateEmbed::new().image(&t.content))).await?
+                // msg.channel_id.send_message(&ctx.http, CreateMessage::new().embed(CreateEmbed::new().image(&t.content))).await?
+                ctx.send(CreateReply::default().embed(CreateEmbed::new().image(&t.content))).await?;
             } else {
-                msg.channel_id.send_message(&ctx.http, CreateMessage::new().content(&t.content)).await?
+                // msg.channel_id.send_message(&ctx.http, CreateMessage::new().content(&t.content)).await?;
+                ctx.send(CreateReply::default().content(&t.content)).await?;
             }
         },
-        None => msg.reply(&ctx.http, "Tag not found.").await?,
+        None => { ctx.reply("Tag not found.").await?; },
     };
     conn.close();
     Ok(())
 }
 
-#[command("add")]
-#[num_args(2)]
-async fn tag_add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+#[poise::command(prefix_command, rename = "add", category = "Tags")]
+// #[num_args(2)]
+async fn tag_add(ctx: Context<'_>, tag_data: Vec<String>) -> Result<(), Error> {
     // msg.reply(&ctx.http, "In tag.add").await?;
-    let name: String = args.single().unwrap();
-    let content: String = args.single().unwrap();
+    // let name: String = args.single().unwrap();
+    // let content: String = args.single().unwrap();
+    let mut data_iter = tag_data.into_iter();
+
+    let name = data_iter.next().unwrap();
+    let content = data_iter.collect::<Vec<String>>().join(" ");
 
     let mut conn = TagsDbConnection::new();
     match conn.insert(name, content) {
-        Ok(_) => msg.reply(&ctx.http, "Successfully added tag.").await?,
-        Err(_) => msg.reply(&ctx.http, "Failed to add tag.").await?,
+        Ok(_) => ctx.reply("Successfully added tag.").await?,
+        Err(_) => ctx.reply("Failed to add tag.").await?,
     };
     conn.close();
 
     Ok(())
 }
 
-#[command("remove")]
-#[aliases("delete", "del", "rm")]
-#[num_args(1)]
-async fn tag_remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+#[poise::command(prefix_command, rename = "remove", aliases("delete", "del", "rm"), category = "Tags")]
+// #[num_args(1)]
+async fn tag_remove(ctx: Context<'_>, tag_name: String) -> Result<(), Error> {
     // msg.reply(&ctx.http, "In tag.remove").await?;
-    let tag: String = args.single().unwrap();
+    // let tag: String = args.single().unwrap();
 
     let mut conn = TagsDbConnection::new();
-    match conn.remove(tag) {
-        Ok(_) => msg.reply(&ctx.http, "Successfully removed tag.").await?,
-        Err(_) => msg.reply(&ctx.http, "Failed to remove tag.").await?
+    match conn.remove(tag_name) {
+        Ok(_) => ctx.reply("Successfully removed tag.").await?,
+        Err(_) => ctx.reply("Failed to remove tag.").await?
     };
     conn.close();
 
@@ -150,50 +154,55 @@ async fn tag_remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
 }
 
 
-#[command("update")]
-#[aliases("edit")]
-#[num_args(2)]
-async fn tag_update(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+#[poise::command(prefix_command, rename = "update", aliases("edit"), category = "Tags")]
+// #[num_args(2)]
+async fn tag_update(ctx: Context<'_>, tag_data: Vec<String>) -> Result<(), Error> {
     // msg.reply(&ctx.http, "In tag.update").await?;
-    let tag: String = args.single().unwrap();
-    let content: String = args.single().unwrap();
+    // let tag: String = args.single().unwrap();
+    // let content: String = args.single().unwrap();
+
+    let mut data_iter = tag_data.into_iter();
+    let tag = data_iter.next().unwrap();
+    let content = data_iter.collect::<Vec<String>>().join(" ");
 
     let mut conn = TagsDbConnection::new();
     match conn.update(tag, content) {
-        Ok(_) => msg.reply(&ctx.http, "Successfully updated tag.").await?,
-        Err(_) => msg.reply(&ctx.http, "Failed to update tag.").await?,
+        Ok(_) => ctx.reply("Successfully updated tag.").await?,
+        Err(_) => ctx.reply("Failed to update tag.").await?,
     };
     conn.close();
 
     Ok(())
 }
 
-#[command("raw")]
-#[num_args(1)]
-#[owners_only]
-async fn tag_raw(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+#[poise::command(prefix_command, rename = "raw", owners_only, category = "Tags", hide_in_help)]
+// #[num_args(1)]
+async fn tag_raw(ctx: Context<'_>, tag: String) -> Result<(), Error> {
     // msg.reply(&ctx.http, "In tag.raw").await?;
-    let name: String = args.single().unwrap();
+    // let name: String = args.single().unwrap();
 
     let mut conn = TagsDbConnection::new();
-    let tag = conn.find_tag(name);
+    let tag = conn.find_tag(tag);
     match tag {
-        Some(t) => msg.channel_id.send_message(&ctx.http, CreateMessage::new().content(format!("```{}```", t.content))).await?,
-        None => msg.reply(&ctx.http, "Tag not found.").await?,
+        Some(t) => {
+            // msg.channel_id.send_message(&ctx.http, CreateMessage::new().content(format!("```{}```", t.content))).await?
+            ctx.send(CreateReply::default().content(format!("```{}```", t.content))).await?;
+        },
+        None => { ctx.reply("Tag not found.").await?; },
     };
     conn.close();
 
     Ok(())
 }
 
-#[command("help")]
-async fn tag_help(ctx: &Context, msg: &Message) -> CommandResult {
-    if let Ok(user_dm_channel) = msg.author.create_dm_channel(&ctx.http).await {
+#[poise::command(prefix_command, rename = "help", category = "Tags")]
+async fn tag_help(ctx: Context<'_>) -> Result<(), Error> {
+    if let Ok(user_dm_channel) = ctx.author().create_dm_channel(ctx.http()).await {
         let mut conn = TagsDbConnection::new();
         let tag_names = conn.get_all_tag_names();
 
         let message = CreateMessage::new().content(format!("The list of tags is: ```{}```", tag_names.join("\n")));
-        user_dm_channel.send_message(&ctx.http, message).await?;
+        user_dm_channel.send_message(ctx.http(), message).await?;
 
     } else {
         println!("Failed to create dm channel.");

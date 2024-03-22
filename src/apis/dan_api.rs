@@ -17,7 +17,7 @@ fn get_dan_username() -> String {
     env::var("DAN_API_USERNAME").expect("To get images from danbooru you need an account (DAN_API_USERNAME) and api key (DAN_API_KEY) environment variables in .env file.")
 }
 
-pub async fn get_posts(tags: Option<Vec<String>>) -> Result<Posts> {
+pub async fn get_posts(tags: Option<Vec<&str>>) -> Result<Posts> {
     let client = Client::new();
 
     return if tags.is_some() {

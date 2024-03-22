@@ -7,7 +7,7 @@ use tracing::*;
 use crate::apis::common::Posts;
 
 
-pub async fn get_posts(tags: Option<Vec<String>>) -> Result<Posts> {
+pub async fn get_posts(tags: Option<Vec<&str>>) -> Result<Posts> {
     let client = Client::new();
 
     return if tags.is_some() {
