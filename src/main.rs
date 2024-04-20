@@ -3,12 +3,10 @@ use std::sync::{Arc, RwLock};
 
 use regex::*;
 
-use songbird::SerenityInit;
 use reqwest::Client as HttpClient;
 
 use poise::serenity_prelude as serenity;
 use serenity::all::FullEvent;
-use serenity::prelude::TypeMapKey;
 
 use tracing::{error};
 
@@ -23,37 +21,16 @@ mod apis;
 mod util;
 mod commands;
 
-struct HttpKey;
-
-impl TypeMapKey for HttpKey {
-    type Value = HttpClient;
-}
-
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
 pub struct Data {
+    http: HttpClient,
+    songbird: Arc<songbird::Songbird>,
     now_playing: Arc<RwLock<NowPlaying>>
 }
 
 
-
-// #[group]
-// #[commands(get_avatar, boxes)]
-// struct General;
-//
-// #[group]
-// #[commands(dan, yan, kona, safe, auto_spin)]
-// struct Spins;
-//
-// #[group]
-// #[commands(tag)]
-// struct Tags;
-//
-// #[group]
-// #[commands(join, leave, play, stop, now_playing)]
-// struct Voice;
-//
 #[tokio::main]
 async fn main() {
     dotenv::dotenv().expect("Failed to load from .env file.");
@@ -63,20 +40,17 @@ async fn main() {
     let token = env::var("DISCORD_TOKEN")
         .expect("Expected a token env variable");
 
-
-    // let framework = StandardFramework::new()
-    //     .group(&GENERAL_GROUP)
-    //     .group(&SPINS_GROUP)
-    //     .group(&TAGS_GROUP)
-    //     .group(&VOICE_GROUP);
-    // framework.configure(Configuration::new().owners(owner).prefix(";"));
-
     let intents = serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::privileged();
+
+    let manager = songbird::Songbird::serenity();
+    let manager_clone = manager.clone();
 
     let framework = poise::Framework::builder()
         .setup(|_context, _ready, _framework| {
             Box::pin(async move {
                 Ok(Data{
+                    http: HttpClient::new(),
+                    songbird: manager_clone,
                     now_playing: Arc::new(RwLock::new(NowPlaying::None))
                 })
             })
@@ -113,25 +87,9 @@ async fn main() {
     // Build the bot client
     let mut client = serenity::ClientBuilder::new(token, intents)
         .framework(framework)
-        .register_songbird()
-        .type_map_insert::<HttpKey>(HttpClient::new())
+        .voice_manager_arc(manager)
         .await
         .expect("Error creating client.");
-
-    // let mut client = Client::builder(&token, intents)
-    //     .framework(framework)
-    //     .event_handler(Handler)
-    //     .register_songbird()
-    //     .type_map_insert::<HttpKey>(HttpClient::new())
-    //     .await
-    //     .expect("Error creating client.");
-
-    // Register NowPlaying into client global data.
-    // {
-    //     let mut data = client.data.write().await;
-    //
-    //     data.insert::<NowPlaying>(Arc::new(RwLock::new(NowPlaying::None)))
-    // }
 
     // Start the client.
     if let Err(why) = client.start().await {
